@@ -9,6 +9,12 @@ type Point struct {
 	y float64
 }
 
+type BackGroundCell struct {
+	sprite *MyImage
+	position Point
+	cellType int
+}
+
 type Cell struct {
 	sprite    *MyImage
 	position  Point

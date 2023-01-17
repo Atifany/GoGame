@@ -5,13 +5,9 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/nuttech/bell"
 )
-
-type MyImage struct {
-	image *ebiten.Image
-	size  Point
-}
 
 type Game struct{}
 
@@ -20,61 +16,46 @@ const screenHeight int = 768
 const SCALE float64 = 2.0
 const updatesPerCall int = 30
 
+// cells - those who iteract with each other.
+// tiles - those who stay on a background.
+// cell types
 const moveStraightCell int = 0
 const wallCell int = 1
 
-var updatesElapsed int = 0
+// Tile types
+const startTile int = 10
+const exitTile int = 11
 
+// map borders in tile witdths
+var mapWidth int = 0
+var mapHeight int = 0
+
+var updatesElapsed int = 0
+var isPaused bool = true
+
+// This arrays contain all the cells from the game
 var cells []*Cell
+var backCells []*BackGroundCell
+
+var pauseButton *Button
+
+func pauseButtonPressed() {
+	isPaused = !isPaused
+}
 
 // Called after RunGame is called
 func init() {
-	redTileImage := LoadImage("./textures/RedTile.png")
-	blackTileImage := LoadImage("./textures/BlackTile.png")
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{1, 1}, 0.0, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{2, 2}, math.Pi / 2, moveStraightCell})
-
-	cells = append(cells, &Cell{blackTileImage,
-		Point{2, 3}, 0.0, wallCell})
-
-	cells = append(cells, &Cell{blackTileImage,
-		Point{4, 1}, 0.0, wallCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{6, 6}, 0.0, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{8, 6}, math.Pi, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{6, 7}, 0.0, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{9, 7}, math.Pi, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{6, 8}, 0.0, moveStraightCell})
-
-	cells = append(cells, &Cell{redTileImage,
-		Point{7, 8}, 0.0, moveStraightCell})
+	loadMapFromFile()
+	playButtonImage := LoadImage("./textures/PlayButton.png", -1).image
+	pauseButton = &Button{playButtonImage,
+		Point{0.0, float64(mapHeight) + 1}, true, pauseButtonPressed}
+	bell.Listen("LMB_pressed", pauseButton.PressDetect)
 }
 
-// Loads png file into ebiten.Image struct
-func LoadImage(path string) *MyImage {
-	img, i, err := ebitenutil.NewImageFromFile(path)
-	if err != nil {
-		log.Fatal(err.Error())
-		return nil
+func handleCells() {
+	if isPaused == true {
+		return
 	}
-
-	return &MyImage{img, Point{float64(i.Bounds().Max.X), float64(i.Bounds().Max.Y)}}
-}
-
-func ProcedeCells() {
 	for _, cell := range cells {
 		switch (*cell).cellType {
 		case moveStraightCell:
@@ -83,15 +64,28 @@ func ProcedeCells() {
 	}
 }
 
+func handleInput() {
+	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		return
+	}
+	// fmt.Printf("lol")
+	x, y := ebiten.CursorPosition()
+	cursorPos := Point{float64(x), float64(y)}
+	bell.Ring("LMB_pressed", cursorPos)
+}
+
 // Called every frame
 func (g *Game) Update() error {
+
+	handleInput()
+
 	if updatesElapsed < updatesPerCall {
 		updatesElapsed++
 		return nil
 	}
 	updatesElapsed = 0
 
-	ProcedeCells()
+	handleCells()
 
 	return nil
 }
@@ -121,6 +115,16 @@ func adjustAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
 
 // Called every frame to draw
 func (g *Game) Draw(screen *ebiten.Image) {
+	// background tiles
+	for _, cell := range backCells {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate((*cell).position.x*(*cell).sprite.size.x,
+			(*cell).position.y*(*cell).sprite.size.y)
+
+		screen.DrawImage((*cell).sprite.image, op)
+	}
+
+	// cells
 	for _, cell := range cells {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Rotate((*cell).direction)
@@ -128,6 +132,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 		screen.DrawImage((*cell).sprite.image, op)
 	}
+
+	// UI
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(
+		(*pauseButton).position.x*float64((*pauseButton).sprite.Bounds().Dx()),
+		(*pauseButton).position.y*float64((*pauseButton).sprite.Bounds().Dy()))
+
+	screen.DrawImage((*pauseButton).sprite, op)
 }
 
 // whatever
