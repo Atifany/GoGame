@@ -1,14 +1,11 @@
 XXXXXXXXXXXXXX
-XVVV         X
-XVVV         X
-XVVV         X
-X            X
-X            X
+XVVV        EX
+XVVV        EX
+XVVV        EX
+X           EX
+X           EX
 X      X    EX
 XXXXXXXXXXXXXX
 
 Available tiles:
-ForwardMoving:0
-ForwardMoving:0
-ForwardMoving:0
 ForwardMoving:0

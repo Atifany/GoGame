@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/nuttech/bell"
 )
 
 // map tiles types
@@ -49,8 +50,13 @@ func readAvailableTiles(gameMap string, cellImages []*MyImage) {
 
 		switch cellNames[0] {
 		case forwardMovingName:
-			cells = append(cells, &Cell{img,
-				Point{float64(col), float64(row)}, 0.0, cellType})
+			cell := &Cell{img,
+				Point{float64(col), float64(row)},
+				Point{float64(col), float64(row)},
+				0.0, cellType, false, false}
+			bell.Listen("LMB_pressed", cell.PressDetect)
+			bell.Listen("LMB_released", cell.releaseDetect)
+			cells = append(cells, cell)
 		}
 		row++
 		if row > mapHeight {
@@ -76,10 +82,12 @@ func readMap(gameMap string, cellImages []*MyImage) {
 			col = 0
 			continue
 		case wallSymbol:
-			cells = append(cells, &Cell{
+			cell := &Cell{
 				getImageByType(cellImages, wallCell),
 				Point{float64(col), float64(row)},
-				0.0, wallCell})
+				Point{float64(col), float64(row)},
+				0.0, wallCell, false, true}
+			cells = append(cells, cell)
 		case startSymbol:
 			backCells = append(backCells, &BackGroundCell{
 				getImageByType(cellImages, startTile),

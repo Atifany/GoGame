@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
 
@@ -18,13 +19,21 @@ const updatesPerCall int = 30
 
 // cells - those who iteract with each other.
 // tiles - those who stay on a background.
-// cell types
-const moveStraightCell int = 0
-const wallCell int = 1
+const (
+	// cell types
+	moveStraightCell int	= 0
+	wallCell int			= 1
+	// Tile types
+	startTile int			= 10
+	exitTile int			= 11
+)
 
-// Tile types
-const startTile int = 10
-const exitTile int = 11
+// game states
+const (
+	preparation int	= 0
+	playing int		= 1
+)
+var gameState int = preparation
 
 // map borders in tile witdths
 var mapWidth int = 0
@@ -39,6 +48,19 @@ var backCells []*BackGroundCell
 
 var pauseButton *Button
 
+func canPlay() bool {
+	for _, cell := range cells {
+		if cell.isReady == false {return false}
+	}
+	return true
+}
+
+func releaseAllCells() {
+	for _, cell := range cells {
+		cell.TryPlace()
+	}
+}
+
 func pauseButtonPressed() {
 	isPaused = !isPaused
 }
@@ -46,46 +68,83 @@ func pauseButtonPressed() {
 // Called after RunGame is called
 func init() {
 	loadMapFromFile()
+
 	playButtonImage := LoadImage("./textures/PlayButton.png", -1).image
 	pauseButton = &Button{playButtonImage,
-		Point{0.0, float64(mapHeight) + 1}, true, pauseButtonPressed}
+		Point{0.0, float64(mapHeight) + 1}, false, pauseButtonPressed}
 	bell.Listen("LMB_pressed", pauseButton.PressDetect)
 }
 
-func handleCells() {
-	if isPaused == true {
-		return
-	}
+func checkWinCondition() {
 	for _, cell := range cells {
-		switch (*cell).cellType {
-		case moveStraightCell:
-			(*cell).moveForwardOne(cells)
+		for _, tile := range backCells {
+			if (*tile).cellType != exitTile {continue}
+			if	math.Round((*cell).position.x) == math.Round((*tile).position.x) &&
+				math.Round((*cell).position.y) == math.Round((*tile).position.y) {
+				fmt.Println("Win condition triggered")
+				//os.Exit(0)
+			}
+		}
+	}
+}
+
+func handleCells() {
+
+	if gameState == playing {
+		if updatesElapsed < updatesPerCall {
+			updatesElapsed++
+			return
+		}
+		updatesElapsed = 0
+	}
+
+	for _, cell := range cells {
+		switch gameState {
+		case preparation:
+			if (*cell).isGrabbed {
+				x, y := ebiten.CursorPosition()
+				cursorX := float64(x) / 16
+				cursorY := float64(y) / 16
+
+				(*cell).position.x = cursorX - 0.5
+				(*cell).position.y = cursorY - 0.5
+			}
+		case playing:
+			if isPaused == true { return }
+
+			switch (*cell).cellType {
+			case moveStraightCell:
+				(*cell).moveForwardOne(cells)
+			}
 		}
 	}
 }
 
 func handleInput() {
-	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		return
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+		cursorPos := Point{float64(x), float64(y)}
+		bell.Ring("LMB_pressed", cursorPos)
 	}
-	// fmt.Printf("lol")
-	x, y := ebiten.CursorPosition()
-	cursorPos := Point{float64(x), float64(y)}
-	bell.Ring("LMB_pressed", cursorPos)
+	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+		cursorPos := Point{float64(x), float64(y)}
+		bell.Ring("LMB_released", cursorPos)
+	}
 }
 
 // Called every frame
 func (g *Game) Update() error {
 
+	checkWinCondition()
 	handleInput()
-
-	if updatesElapsed < updatesPerCall {
-		updatesElapsed++
-		return nil
-	}
-	updatesElapsed = 0
-
 	handleCells()
+
+	if gameState != playing && canPlay() {
+		releaseAllCells()
+		gameState = playing
+		pauseButton.isActive = true
+	}
 
 	return nil
 }
@@ -138,7 +197,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op.GeoM.Translate(
 		(*pauseButton).position.x*float64((*pauseButton).sprite.Bounds().Dx()),
 		(*pauseButton).position.y*float64((*pauseButton).sprite.Bounds().Dy()))
-
+	
 	screen.DrawImage((*pauseButton).sprite, op)
 }
 
