@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/nuttech/bell"
 )
 
@@ -11,28 +12,36 @@ type Point struct {
 	y float64
 }
 
-type BackGroundCell struct {
-	sprite *MyImage
-	position Point
-	cellType int
+type Tile struct {
+	sprite		*ebiten.Image
+	transform	*Transform
+	cellType	int
+	isOccupied	bool
 }
 
 // Cells could not be grabbed when canPlay() triggers
 
 type Cell struct {
-	sprite			*MyImage
-	position		Point
-	defaultPosition Point
+	sprite			*ebiten.Image
+	transform		*Transform
 	direction		float64
 	cellType		int
 	isGrabbed		bool
 	isReady			bool
 }
 
+type Transform struct {
+	position		Point
+	defaultPosition Point
+	width			float64
+	height			float64
+}
+
 // Returns a pointer to a tile which occupies targetPos. Returns nil of none were found
 func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 	for _, cell := range cells {
-		if (*cell).position.x == targetPos.x && (*cell).position.y == targetPos.y {
+		t := (*cell).transform
+		if (*t).position.x == targetPos.x && (*t).position.y == targetPos.y {
 			return cell
 		}
 	}
@@ -41,30 +50,34 @@ func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 
 // Moves its tile by one width in the direction pointed by Cell.direction
 func (c *Cell) moveForwardOne(cells []*Cell) {
-	target := Point{math.Round(c.position.x + 1*math.Cos(c.direction)),
-		math.Round(c.position.y + 1*math.Sin(c.direction))}
+	t := (*c).transform
+	target := Point{math.Round((*t).position.x + math.Cos(c.direction)),
+		math.Round((*t).position.y + math.Sin(c.direction))}
 	if checkCollisions(cells, target) != nil {
 		return
 	}
 
-	c.position = target
+	(*t).position = target
 }
 
-// Clear all consts properly
+func (t *Transform) isPointInside(point Point) bool {
+	if point.x < (*t).position.x + (*t).width &&
+		point.x > (*t).position.x &&
+		point.y < (*t).position.y + (*t).height &&
+		point.y > (*t).position.y {
+	//
+		return true
+	}
+	return false
+}
+
 // PressDetect is called on LMB clicked and detects whether
 // a click landed on a parent button.
 func (c *Cell) PressDetect(message bell.Message) {
-	pressedX := message.Value.(Point).x / 16
-	pressedY := message.Value.(Point).y / 16
-	cWidth := 1.0
-	cHegith := 1.0
-	cPosX := (*c).position.x + cWidth / 2
-	cPosY := (*c).position.y + cHegith / 2
+	pressedX := message.Value.(Point).x / float64((*c).sprite.Bounds().Dx())
+	pressedY := message.Value.(Point).y / float64((*c).sprite.Bounds().Dy())
 
-	if pressedX < cPosX + cWidth / 2 &&
-		pressedX > cPosX - cWidth / 2 &&
-		pressedY < cPosY + cHegith / 2 &&
-		pressedY >  cPosY - cHegith / 2 {
+	if (*c).transform.isPointInside(Point{pressedX, pressedY}) {
 		(*c).isGrabbed = true
 	}
 }
@@ -76,38 +89,26 @@ func (c *Cell) releaseDetect(message bell.Message){
 func (c *Cell) TryPlace() {
 	if (*c).isGrabbed == false { return }
 
-	releasedX := (*c).position.x + 0.5
-	releasedY := (*c).position.y + 0.5
-	cWidth := 1.0
-	cHegith := 1.0
+	cellT := (*c).transform
+	releasedX := (*cellT).position.x + 0.5
+	releasedY := (*cellT).position.y + 0.5
 	
-	for _, tile := range backCells {
-		cPosX := (*tile).position.x + cWidth / 2
-		cPosY := (*tile).position.y + cHegith / 2
+	for _, tile := range tiles {
+		tileT := (*tile).transform
 		if tile.cellType == startTile &&
-			releasedX <= cPosX + cWidth / 2 &&
-			releasedX >= cPosX - cWidth / 2 &&
-			releasedY <= cPosY + cHegith / 2 &&
-			releasedY >= cPosY - cHegith / 2 {
-			tPosX := (*tile).position.x
-			tPosY := (*tile).position.y
-			for _, cell := range cells {
-				if	math.Round(tPosX) == math.Round((*cell).position.x) &&
-					math.Round(tPosY) == math.Round((*cell).position.y) &&
-					(*cell) != (*c){
-					(*c).position = (*c).defaultPosition
-					(*c).isGrabbed = false
-					return
-				}
+			(*tile).transform.isPointInside(Point{releasedX, releasedY}) {
+		// 
+			if (*tile).isOccupied == true {
+				break
+			} else {
+				(*cellT).position = (*tileT).position
+				(*cellT).defaultPosition = (*tileT).position
+				(*c).isReady = true
+				(*c).isGrabbed = false
+				return
 			}
-			(*c).position = tile.position
-			(*c).defaultPosition = tile.position
-			(*c).isReady = true
-			(*c).isGrabbed = false
-			return
 		}
 	}
-
-	(*c).position = (*c).defaultPosition
+	(*cellT).position = (*cellT).defaultPosition
 	(*c).isGrabbed = false
 }

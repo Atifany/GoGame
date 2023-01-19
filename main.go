@@ -44,7 +44,7 @@ var isPaused bool = true
 
 // This arrays contain all the cells from the game
 var cells []*Cell
-var backCells []*BackGroundCell
+var tiles []*Tile
 
 var pauseButton *Button
 
@@ -77,7 +77,7 @@ func init() {
 
 func checkWinCondition() {
 	for _, cell := range cells {
-		for _, tile := range backCells {
+		for _, tile := range tiles {
 			if (*tile).cellType != exitTile {continue}
 			if	math.Round((*cell).position.x) == math.Round((*tile).position.x) &&
 				math.Round((*cell).position.y) == math.Round((*tile).position.y) {
@@ -147,63 +147,6 @@ func (g *Game) Update() error {
 	}
 
 	return nil
-}
-
-/*
-	Summary
-
-because op.GeoM.Rotate rotates an image the wrong way this function
-is needed to adjust rotation result.
-It also moves image to cell's coordinates
-*/
-func adjustAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
-	cos := math.Cos((*c).direction)
-	sin := math.Sin((*c).direction)
-
-	rot := Point{cos - sin, sin + cos}
-	if rot.x >= 0 {
-		rot.x = 0.0
-	}
-	if rot.y >= 0 {
-		rot.y = 0.0
-	}
-
-	op.GeoM.Translate(math.Round(((*c).position.x-rot.x)*(*c).sprite.size.x),
-		math.Round(((*c).position.y-rot.y)*(*c).sprite.size.y))
-}
-
-// Called every frame to draw
-func (g *Game) Draw(screen *ebiten.Image) {
-	// background tiles
-	for _, cell := range backCells {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate((*cell).position.x*(*cell).sprite.size.x,
-			(*cell).position.y*(*cell).sprite.size.y)
-
-		screen.DrawImage((*cell).sprite.image, op)
-	}
-
-	// cells
-	for _, cell := range cells {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Rotate((*cell).direction)
-		adjustAfterRotation(cell, op)
-
-		screen.DrawImage((*cell).sprite.image, op)
-	}
-
-	// UI
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(
-		(*pauseButton).position.x*float64((*pauseButton).sprite.Bounds().Dx()),
-		(*pauseButton).position.y*float64((*pauseButton).sprite.Bounds().Dy()))
-	
-	screen.DrawImage((*pauseButton).sprite, op)
-}
-
-// whatever
-func (g *Game) Layout(outsideWidth int, outsideHeight int) (int, int) {
-	return int(float64(screenWidth) / SCALE), int(float64(screenHeight) / SCALE)
 }
 
 func main() {
