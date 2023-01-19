@@ -78,9 +78,11 @@ func init() {
 func checkWinCondition() {
 	for _, cell := range cells {
 		for _, tile := range tiles {
+			cellT := (*cell).transform
+			tileT := (*tile).transform
 			if (*tile).cellType != exitTile {continue}
-			if	math.Round((*cell).position.x) == math.Round((*tile).position.x) &&
-				math.Round((*cell).position.y) == math.Round((*tile).position.y) {
+			if	math.Round((*cellT).position.x) == math.Round((*tileT).position.x) &&
+				math.Round((*cellT).position.y) == math.Round((*tileT).position.y) {
 				fmt.Println("Win condition triggered")
 				//os.Exit(0)
 			}
@@ -103,11 +105,12 @@ func handleCells() {
 		case preparation:
 			if (*cell).isGrabbed {
 				x, y := ebiten.CursorPosition()
-				cursorX := float64(x) / 16
-				cursorY := float64(y) / 16
+				cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
+				cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
+				cellT := (*cell).transform
 
-				(*cell).position.x = cursorX - 0.5
-				(*cell).position.y = cursorY - 0.5
+				(*cellT).position.x = cursorX - 0.5
+				(*cellT).position.y = cursorY - 0.5
 			}
 		case playing:
 			if isPaused == true { return }

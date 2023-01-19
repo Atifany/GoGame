@@ -9,12 +9,13 @@ import (
 // background tiles
 func drawTiles(screen *ebiten.Image) {
 	for _, tile := range tiles {
+		tileT := (*tile).transform
 		tileWidth := float64((*tile).sprite.Bounds().Dx())
 		tileHeight := float64((*tile).sprite.Bounds().Dy())
 		
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(math.Round((*tile).position.x * tileWidth),
-			math.Round((*tile).position.y * tileHeight))
+		op.GeoM.Translate(math.Round((*tileT).position.x * tileWidth),
+			math.Round((*tileT).position.y * tileHeight))
 
 		screen.DrawImage((*tile).sprite, op)
 	}
@@ -53,8 +54,9 @@ func MoveAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
 		rot.y = 0.0
 	}
 
-	op.GeoM.Translate(math.Round(((*c).position.x - rot.x) * cellWidth),
-		math.Round(((*c).position.y - rot.y) * cellHeight))
+	cellT := (*c).transform
+	op.GeoM.Translate(math.Round(((*cellT).position.x - rot.x) * cellWidth),
+		math.Round(((*cellT).position.y - rot.y) * cellHeight))
 }
 
 // Called every frame to draw

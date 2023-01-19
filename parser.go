@@ -58,10 +58,10 @@ func readAvailableTiles(gameMap string, cellImages []*MyImage) {
 		img, err := getImageByType(cellImages, cellType)
 		checkParseError(err)
 
-		cell := &Cell{img.image,
+		cell := &Cell{img.image, &Transform{
 			Point{float64(col), float64(row)},
-			Point{float64(col), float64(row)},
-			1.0, 1.0, 0.0, cellType, false, false}
+			Point{float64(col), float64(row)}, 1.0, 1.0},
+			0.0, cellType, false, false}
 		bell.Listen("LMB_pressed", cell.PressDetect)
 		bell.Listen("LMB_released", cell.releaseDetect)
 		cells = append(cells, cell)
@@ -95,13 +95,15 @@ func readMap(gameMap string, cellImages []*MyImage, tileTypeLookUp map[byte]int)
 		checkParseError(err)
 
 		if isTile(cellType) {
-			tiles = append(tiles, &Tile{ img.image,
-				Point{float64(col), float64(row)}, 1.0, 1.0, cellType, false})
+			tiles = append(tiles, &Tile{ img.image, &Transform{
+				Point{float64(col), float64(row)},
+				Point{float64(col), float64(row)}, 1.0, 1.0},
+				cellType, false})
 		} else {
-			cell := &Cell{ img.image,
+			cell := &Cell{ img.image, &Transform{
 				Point{float64(col), float64(row)},
-				Point{float64(col), float64(row)},
-				1.0, 1.0, 0.0, cellType, false, true}
+				Point{float64(col), float64(row)}, 1.0, 1.0},
+				0.0, cellType, false, true}
 			cells = append(cells, cell)
 		}
 		col++;
