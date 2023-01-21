@@ -23,6 +23,7 @@ const (
 	// cell types
 	moveStraightCell int	= 0
 	wallCell int			= 1
+	dublicationCell int		= 2
 	// Tile types
 	startTile int			= 10
 	exitTile int			= 11
@@ -87,40 +88,46 @@ func checkWinCondition() {
 
 // drags cell with the cursor if cell is grabbed
 func dragCell(cell *Cell) {
-	if (*cell).isGrabbed {
-		x, y := ebiten.CursorPosition()
-		cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
-		cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
-		cellT := (*cell).transform
+	if (*cell).isGrabbed == false { return }
+	x, y := ebiten.CursorPosition()
+	cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
+	cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
+	cellT := (*cell).transform
 
-		(*cellT).position.x = cursorX - 0.5
-		(*cellT).position.y = cursorY - 0.5
+	(*cellT).position.x = cursorX - 0.5
+	(*cellT).position.y = cursorY - 0.5
+}
+
+func handleCellsPreparation() {
+	for _, cell := range cells {
+		dragCell(cell)
 	}
 }
 
-func handleCells() {
-
-	if gameState == playing {
-		if updatesElapsed < updatesPerCall {
-			updatesElapsed++
-			return
-		}
-		updatesElapsed = 0
+func releaseHasMovedFlag() {
+	for _, cell := range cells {
+		(*cell).hasMoved = false
 	}
+}
+
+func handleCellsPlaying() {
+	if isPaused == true { return }
+	if updatesElapsed < updatesPerCall {
+		updatesElapsed++
+		// place Lerp() here
+		return
+	}
+	updatesElapsed = 0
 
 	for _, cell := range cells {
-		switch gameState {
-		case preparation:
-			dragCell(cell)
-		case playing:
-			if isPaused == true { return }
-
-			switch (*cell).cellType {
-			case moveStraightCell:
-				(*cell).moveForwardOne(cells)
-			}
+		switch (*cell).cellType {
+		case moveStraightCell:
+			(*cell).moveOne((*cell).direction)
+		case dublicationCell:
+			(*cell).Dublicate()
 		}
 	}
+	releaseHasMovedFlag()
 }
 
 func handleInput() {
@@ -138,14 +145,25 @@ func handleInput() {
 
 // Called every frame
 func (g *Game) Update() error {
-
-	checkWinCondition()
 	handleInput()
-	handleCells()
 
-	if gameState == preparation && cellsReady == len(cells) {
-		pauseButton.isActive = true
+	switch gameState{
+
+	case preparation:
+		handleCellsPreparation()
+		if cellsReady == len(cells) {
+			pauseButton.isActive = true
+		}
+
+	case playing:
+		handleCellsPlaying()
+
+	case win:
+
+	case lose:
+		
 	}
+	checkWinCondition()
 
 	return nil
 }

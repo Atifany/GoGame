@@ -16,6 +16,7 @@ func pauseButtonPressed() {
 	isPaused = !isPaused
 	if gameState == preparation {
 		gameState = playing
+		releaseAllCells()
 	}
 }
 

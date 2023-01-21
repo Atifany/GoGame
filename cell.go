@@ -27,6 +27,7 @@ type Cell struct {
 	direction		float64
 	cellType		int
 	isGrabbed		bool
+	hasMoved		bool
 }
 
 type Transform struct {
@@ -47,16 +48,57 @@ func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 	return nil
 }
 
-// Moves its tile by one width in the direction pointed by Cell.direction
-func (c *Cell) moveForwardOne(cells []*Cell) {
+// Moves its tile by one width in the direction pointed by direction
+func (c *Cell) moveOne(direction float64) {
+	if (*c).hasMoved == true || (*c).cellType == wallCell { return }
+	if c.cellType == dublicationCell &&
+		(c.direction == direction || c.direction == getOppositeDir(direction)) {
+			return
+		}
+
 	t := (*c).transform
 	target := Point{math.Round((*t).position.x + math.Cos(c.direction)),
 		math.Round((*t).position.y + math.Sin(c.direction))}
-	if checkCollisions(cells, target) != nil {
-		return
+	collision := checkCollisions(cells, target)
+	if collision != nil {
+		(*collision).moveOne(direction)
 	}
+	if checkCollisions(cells, target) == nil {
+		(*t).position = target
+	}
+	(*c).hasMoved = true
+}
 
-	(*t).position = target
+func getOppositeDir(direction float64) float64 {
+	if direction >= math.Pi {
+		return direction - math.Pi
+	} else {
+		return direction + math.Pi
+	}
+}
+
+func (c *Cell) Dublicate() {
+	if (*c).cellType != dublicationCell { return }
+
+	t := (*c).transform
+	targetF := Point{math.Round((*t).position.x + math.Cos(c.direction)),
+		math.Round((*t).position.y + math.Sin(c.direction))}
+	collision := checkCollisions(cells, targetF)
+	if collision != nil {
+		(*collision).moveOne(collision.direction)
+	}
+	if checkCollisions(cells, targetF) == nil {
+		behindDir := getOppositeDir(c.direction)
+		targetB := Point{math.Round((*t).position.x + math.Cos(behindDir)),
+			math.Round((*t).position.y + math.Sin(behindDir))}
+		collision = checkCollisions(cells, targetB)
+		if collision == nil || collision.cellType == wallCell{
+			return
+		}
+		newTransform := &Transform{targetF, targetF, 1.0, 1.0}
+		cells = append(cells, &Cell{collision.sprite, newTransform,
+			collision.direction, collision.cellType, false, true})
+	}
 }
 
 func (t *Transform) isPointInside(point Point) bool {
@@ -104,6 +146,7 @@ func (c *Cell) TryPlace() {
 				(*cellT).position = (*tileT).position
 				(*cellT).defaultPosition = (*tileT).position
 				(*c).isGrabbed = false
+				(*tile).isOccupied = true
 				cellsReady++
 				return
 			}

@@ -1,7 +1,7 @@
 XXXXXXXXXXXXXX
 XVVV        EX
-XVVV        EX
-XVVV        EX
+XVVV      X EX
+X           EX
 X           EX
 X           EX
 X      X    EX
@@ -9,3 +9,7 @@ XXXXXXXXXXXXXX
 
 Available tiles:
 ForwardMoving:0
+ForwardMoving:0
+Dublicating:2
+Dublicating:2
+
