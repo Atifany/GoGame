@@ -32,6 +32,8 @@ const (
 const (
 	preparation int	= 0
 	playing int		= 1
+	win int			= 2
+	lose int		= 3
 )
 var gameState int = preparation
 
@@ -41,6 +43,7 @@ var mapHeight int = 0
 
 var updatesElapsed int = 0
 var isPaused bool = true
+var cellsReady int = 0
 
 // This arrays contain all the cells from the game
 var cells []*Cell
@@ -48,21 +51,10 @@ var tiles []*Tile
 
 var pauseButton *Button
 
-func canPlay() bool {
-	for _, cell := range cells {
-		if cell.isReady == false {return false}
-	}
-	return true
-}
-
 func releaseAllCells() {
 	for _, cell := range cells {
 		cell.TryPlace()
 	}
-}
-
-func pauseButtonPressed() {
-	isPaused = !isPaused
 }
 
 // Called after RunGame is called
@@ -70,12 +62,15 @@ func init() {
 	loadMapFromFile()
 
 	playButtonImage := LoadImage("./textures/PlayButton.png", -1).image
-	pauseButton = &Button{playButtonImage,
-		Point{0.0, float64(mapHeight) + 1}, false, pauseButtonPressed}
+	pauseButton = &Button{playButtonImage, &Transform{
+		Point{0.0, float64(mapHeight) + 1},
+		Point{0.0, float64(mapHeight) + 1}, 1.0, 1.0},
+		false, pauseButtonPressed}
 	bell.Listen("LMB_pressed", pauseButton.PressDetect)
 }
 
 func checkWinCondition() {
+	if gameState != playing { return }
 	for _, cell := range cells {
 		for _, tile := range tiles {
 			cellT := (*cell).transform
@@ -84,9 +79,22 @@ func checkWinCondition() {
 			if	math.Round((*cellT).position.x) == math.Round((*tileT).position.x) &&
 				math.Round((*cellT).position.y) == math.Round((*tileT).position.y) {
 				fmt.Println("Win condition triggered")
-				//os.Exit(0)
+				gameState = win
 			}
 		}
+	}
+}
+
+// drags cell with the cursor if cell is grabbed
+func dragCell(cell *Cell) {
+	if (*cell).isGrabbed {
+		x, y := ebiten.CursorPosition()
+		cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
+		cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
+		cellT := (*cell).transform
+
+		(*cellT).position.x = cursorX - 0.5
+		(*cellT).position.y = cursorY - 0.5
 	}
 }
 
@@ -103,15 +111,7 @@ func handleCells() {
 	for _, cell := range cells {
 		switch gameState {
 		case preparation:
-			if (*cell).isGrabbed {
-				x, y := ebiten.CursorPosition()
-				cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
-				cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
-				cellT := (*cell).transform
-
-				(*cellT).position.x = cursorX - 0.5
-				(*cellT).position.y = cursorY - 0.5
-			}
+			dragCell(cell)
 		case playing:
 			if isPaused == true { return }
 
@@ -143,9 +143,7 @@ func (g *Game) Update() error {
 	handleInput()
 	handleCells()
 
-	if gameState != playing && canPlay() {
-		releaseAllCells()
-		gameState = playing
+	if gameState == preparation && cellsReady == len(cells) {
 		pauseButton.isActive = true
 	}
 

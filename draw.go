@@ -66,9 +66,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	
 	// UI
 	op := &ebiten.DrawImageOptions{}
+	buttonT := (*pauseButton).transform
 	op.GeoM.Translate(
-		(*pauseButton).position.x*float64((*pauseButton).sprite.Bounds().Dx()),
-		(*pauseButton).position.y*float64((*pauseButton).sprite.Bounds().Dy()))
+		(*buttonT).position.x * float64((*pauseButton).sprite.Bounds().Dx()),
+		(*buttonT).position.y * float64((*pauseButton).sprite.Bounds().Dy()))
 	
 	screen.DrawImage((*pauseButton).sprite, op)
 }

@@ -27,7 +27,6 @@ type Cell struct {
 	direction		float64
 	cellType		int
 	isGrabbed		bool
-	isReady			bool
 }
 
 type Transform struct {
@@ -74,6 +73,7 @@ func (t *Transform) isPointInside(point Point) bool {
 // PressDetect is called on LMB clicked and detects whether
 // a click landed on a parent button.
 func (c *Cell) PressDetect(message bell.Message) {
+	if gameState != preparation { return }
 	pressedX := message.Value.(Point).x / float64((*c).sprite.Bounds().Dx())
 	pressedY := message.Value.(Point).y / float64((*c).sprite.Bounds().Dy())
 
@@ -103,8 +103,8 @@ func (c *Cell) TryPlace() {
 			} else {
 				(*cellT).position = (*tileT).position
 				(*cellT).defaultPosition = (*tileT).position
-				(*c).isReady = true
 				(*c).isGrabbed = false
+				cellsReady++
 				return
 			}
 		}
