@@ -24,6 +24,7 @@ const (
 	moveStraightCell int	= 0
 	wallCell int			= 1
 	dublicationCell int		= 2
+	rotationCell int		= 3
 	// Tile types
 	startTile int			= 10
 	exitTile int			= 11
@@ -125,6 +126,8 @@ func handleCellsPlaying() {
 			(*cell).moveOne((*cell).direction)
 		case dublicationCell:
 			(*cell).Dublicate()
+		case rotationCell:
+			(*cell).Rotate()
 		}
 	}
 	releaseHasMovedFlag()

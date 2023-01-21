@@ -30,6 +30,13 @@ type Cell struct {
 	hasMoved		bool
 }
 
+func (c *Cell) SetDirection(direction float64) {
+	if direction >= 2*math.Pi {
+		direction -= 2*math.Pi
+	}
+	(*c).direction = direction
+}
+
 type Transform struct {
 	position		Point
 	defaultPosition Point
@@ -48,13 +55,21 @@ func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 	return nil
 }
 
+func getOppositeDir(direction float64) float64 {
+	if direction >= math.Pi {
+		return direction - math.Pi
+	} else {
+		return direction + math.Pi
+	}
+}
 // Moves its tile by one width in the direction pointed by direction
 func (c *Cell) moveOne(direction float64) {
 	if (*c).hasMoved == true || (*c).cellType == wallCell { return }
 	if c.cellType == dublicationCell &&
 		(c.direction == direction || c.direction == getOppositeDir(direction)) {
-			return
-		}
+	//
+		return
+	}
 
 	t := (*c).transform
 	target := Point{math.Round((*t).position.x + math.Cos(c.direction)),
@@ -67,14 +82,6 @@ func (c *Cell) moveOne(direction float64) {
 		(*t).position = target
 	}
 	(*c).hasMoved = true
-}
-
-func getOppositeDir(direction float64) float64 {
-	if direction >= math.Pi {
-		return direction - math.Pi
-	} else {
-		return direction + math.Pi
-	}
 }
 
 func (c *Cell) Dublicate() {
@@ -101,6 +108,24 @@ func (c *Cell) Dublicate() {
 	}
 }
 
+func (c *Cell) Rotate() {
+	if (*c).cellType != rotationCell { return }
+
+	t := (*c).transform
+	direction := 0.0
+	for direction < 2 * math.Pi {
+		target := Point{math.Round((*t).position.x + math.Cos(direction)),
+			math.Round((*t).position.y + math.Sin(direction))}
+		collision := checkCollisions(cells, target)
+		direction += math.Pi / 2
+		// also add here a check for duplication cell front a back surfaces
+		if collision == nil || collision.cellType == wallCell { continue }
+			
+		(*collision).SetDirection(collision.direction + math.Pi / 2)
+		//fmt.Println((*collision).cellType, " ", (*collision).direction / math.Pi * 2)
+	}
+}
+
 func (t *Transform) isPointInside(point Point) bool {
 	if point.x < (*t).position.x + (*t).width &&
 		point.x > (*t).position.x &&
@@ -120,6 +145,12 @@ func (c *Cell) PressDetect(message bell.Message) {
 	pressedY := message.Value.(Point).y / float64((*c).sprite.Bounds().Dy())
 
 	if (*c).transform.isPointInside(Point{pressedX, pressedY}) {
+		for _, tile := range tiles {
+			if (*tile).transform.isPointInside(Point{pressedX, pressedY}) {
+				(*tile).isOccupied= false
+				break
+			}
+		}
 		(*c).isGrabbed = true
 	}
 }

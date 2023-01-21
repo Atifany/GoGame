@@ -124,6 +124,8 @@ func loadMapFromFile() {
 		LoadImage("./textures/ExitTile.png", exitTile))
 	cellImages = append(cellImages,
 		LoadImage("./textures/DublicationCell.png", dublicationCell))
+	cellImages = append(cellImages,
+		LoadImage("./textures/RotationCell.png", rotationCell))
 
 	tileTypeLookUp := make(map[byte]int)
 	tileTypeLookUp[wallSymbol] = wallCell
