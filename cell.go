@@ -26,7 +26,6 @@ type Cell struct {
 	transform		*Transform
 	direction		float64
 	cellType		int
-	isGrabbed		bool
 	hasMoved		bool
 }
 
@@ -62,10 +61,11 @@ func getOppositeDir(direction float64) float64 {
 		return direction + math.Pi
 	}
 }
+
 // Moves its tile by one width in the direction pointed by direction
 func (c *Cell) moveOne(direction float64) {
-	if (*c).hasMoved == true || (*c).cellType == wallCell { return }
-	if c.cellType == dublicationCell &&
+	if ((*c).hasMoved == true || (*c).cellType == wallCell) &&
+		c.cellType == dublicationCell &&
 		(c.direction == direction || c.direction == getOppositeDir(direction)) {
 	//
 		return
@@ -92,19 +92,19 @@ func (c *Cell) Dublicate() {
 		math.Round((*t).position.y + math.Sin(c.direction))}
 	collision := checkCollisions(cells, targetF)
 	if collision != nil {
-		(*collision).moveOne(collision.direction)
+		(*collision).moveOne(c.direction)
 	}
 	if checkCollisions(cells, targetF) == nil {
 		behindDir := getOppositeDir(c.direction)
 		targetB := Point{math.Round((*t).position.x + math.Cos(behindDir)),
 			math.Round((*t).position.y + math.Sin(behindDir))}
 		collision = checkCollisions(cells, targetB)
-		if collision == nil || collision.cellType == wallCell{
+		if collision == nil {
 			return
 		}
 		newTransform := &Transform{targetF, targetF, 1.0, 1.0}
 		cells = append(cells, &Cell{collision.sprite, newTransform,
-			collision.direction, collision.cellType, false, true})
+			collision.direction, collision.cellType, true})
 	}
 }
 
@@ -151,7 +151,7 @@ func (c *Cell) PressDetect(message bell.Message) {
 				break
 			}
 		}
-		(*c).isGrabbed = true
+		grabbedCell = c
 	}
 }
 
@@ -160,7 +160,7 @@ func (c *Cell) releaseDetect(message bell.Message){
 }
 
 func (c *Cell) TryPlace() {
-	if (*c).isGrabbed == false { return }
+	if grabbedCell != c { return }
 
 	cellT := (*c).transform
 	releasedX := (*cellT).position.x + 0.5
@@ -176,13 +176,13 @@ func (c *Cell) TryPlace() {
 			} else {
 				(*cellT).position = (*tileT).position
 				(*cellT).defaultPosition = (*tileT).position
-				(*c).isGrabbed = false
 				(*tile).isOccupied = true
+				grabbedCell = nil
 				cellsReady++
 				return
 			}
 		}
 	}
 	(*cellT).position = (*cellT).defaultPosition
-	(*c).isGrabbed = false
+	grabbedCell = nil
 }

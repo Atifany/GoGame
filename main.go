@@ -15,7 +15,7 @@ type Game struct{}
 const screenWidth int = 1024
 const screenHeight int = 768
 const SCALE float64 = 2.0
-const updatesPerCall int = 30
+const updatesPerCall int = 90
 
 // cells - those who iteract with each other.
 // tiles - those who stay on a background.
@@ -46,6 +46,7 @@ var mapHeight int = 0
 var updatesElapsed int = 0
 var isPaused bool = true
 var cellsReady int = 0
+var grabbedCell *Cell = nil
 
 // This arrays contain all the cells from the game
 var cells []*Cell
@@ -88,21 +89,19 @@ func checkWinCondition() {
 }
 
 // drags cell with the cursor if cell is grabbed
-func dragCell(cell *Cell) {
-	if (*cell).isGrabbed == false { return }
+func dragCell() {
+	if grabbedCell == nil { return }
 	x, y := ebiten.CursorPosition()
-	cursorX := float64(x) / float64((*cell).sprite.Bounds().Dx())
-	cursorY := float64(y) / float64((*cell).sprite.Bounds().Dy())
-	cellT := (*cell).transform
+	cursorX := float64(x) / float64((*grabbedCell).sprite.Bounds().Dx())
+	cursorY := float64(y) / float64((*grabbedCell).sprite.Bounds().Dy())
+	cellT := (*grabbedCell).transform
 
 	(*cellT).position.x = cursorX - 0.5
 	(*cellT).position.y = cursorY - 0.5
 }
 
 func handleCellsPreparation() {
-	for _, cell := range cells {
-		dragCell(cell)
-	}
+	dragCell()
 }
 
 func releaseHasMovedFlag() {
@@ -144,6 +143,11 @@ func handleInput() {
 		cursorPos := Point{float64(x), float64(y)}
 		bell.Ring("LMB_released", cursorPos)
 	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+		if grabbedCell != nil {
+			(*grabbedCell).SetDirection((*grabbedCell).direction + math.Pi / 2)
+		}
+	}
 }
 
 // Called every frame
@@ -159,6 +163,8 @@ func (g *Game) Update() error {
 		}
 
 	case playing:
+		bell.Remove("LMB_pressed")
+		bell.Remove("LMB_released")
 		handleCellsPlaying()
 
 	case win:
