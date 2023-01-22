@@ -64,9 +64,9 @@ func getOppositeDir(direction float64) float64 {
 
 // Moves its tile by one width in the direction pointed by direction
 func (c *Cell) moveOne(direction float64) {
-	if ((*c).hasMoved == true || (*c).cellType == wallCell) &&
-		c.cellType == dublicationCell &&
-		(c.direction == direction || c.direction == getOppositeDir(direction)) {
+	if ((*c).hasMoved == true || (*c).cellType == wallCell) ||
+		(c.cellType == moveStraightCell && 
+		c.direction == getOppositeDir(direction)) {
 	//
 		return
 	}
