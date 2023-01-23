@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,11 +23,12 @@ type Tile struct {
 // Cells could not be grabbed when canPlay() triggers
 
 type Cell struct {
-	sprite			*ebiten.Image
-	transform		*Transform
-	direction		float64
-	cellType		int
-	hasMoved		bool
+	sprite		*ebiten.Image
+	transform	*Transform
+	direction	float64
+	cellType	int
+	hasMoved	bool
+	movement	*MovementPlaceHolder
 }
 
 func (c *Cell) SetDirection(direction float64) {
@@ -43,11 +45,31 @@ type Transform struct {
 	height			float64
 }
 
+type MovementPlaceHolder struct {
+	startPos	Point
+	target		Point
+	isMoving	bool
+}
+
+func (t *Transform) Lerp(startPos Point, endPos Point, k float64) {
+	shiftX := endPos.x - startPos.x
+	shiftY := endPos.y - startPos.y
+
+	(*t).position.x = startPos.x + k * shiftX
+	(*t).position.y = startPos.y + k * shiftY
+}
+
 // Returns a pointer to a tile which occupies targetPos. Returns nil of none were found
 func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 	for _, cell := range cells {
 		t := (*cell).transform
-		if (*t).position.x == targetPos.x && (*t).position.y == targetPos.y {
+		m := (*cell).movement
+		//fmt.Println("> ", (*m).isMoving, " ", (*t).position.x, ":", m.target.x)
+		if ((*t).position.x == targetPos.x && (*t).position.y == targetPos.y &&
+			(*m).isMoving == false) ||
+			((*m).isMoving == true &&
+			targetPos.x == m.target.x && targetPos.y == m.target.y){
+		//
 			return cell
 		}
 	}
@@ -64,48 +86,52 @@ func getOppositeDir(direction float64) float64 {
 
 // Moves its tile by one width in the direction pointed by direction
 func (c *Cell) moveOne(direction float64) {
-	if ((*c).hasMoved == true || (*c).cellType == wallCell) ||
-		(c.cellType == moveStraightCell && 
-		c.direction == getOppositeDir(direction)) {
-	//
-		return
-	}
+	if (*c).cellType == wallCell{ return }
+	fmt.Println("Trying to move ", c.cellType, " in dir ", direction / math.Pi)
 
 	t := (*c).transform
-	target := Point{math.Round((*t).position.x + math.Cos(c.direction)),
-		math.Round((*t).position.y + math.Sin(c.direction))}
+	target := Point{math.Round((*t).position.x + math.Cos(direction)),
+		math.Round((*t).position.y + math.Sin(direction))}
 	collision := checkCollisions(cells, target)
 	if collision != nil {
+		fmt.Println("Obstacle found ", collision.cellType)
 		(*collision).moveOne(direction)
 	}
-	if checkCollisions(cells, target) == nil {
-		(*t).position = target
+	collision = checkCollisions(cells, target)
+	if collision == nil {
+		fmt.Println("Obstacle removed ", c.cellType)
+		//(*t).position = target
+		m := (*c).movement
+		(*m).startPos = (*t).position
+		(*m).target = target
+		(*m).isMoving = true
+	} else {
+		fmt.Println("Obstacle was not removed", collision.cellType)
 	}
-	(*c).hasMoved = true
 }
 
 func (c *Cell) Dublicate() {
 	if (*c).cellType != dublicationCell { return }
 
 	t := (*c).transform
+	
+	behindDir := getOppositeDir(c.direction)
+	targetB := Point{math.Round((*t).position.x + math.Cos(behindDir)),
+		math.Round((*t).position.y + math.Sin(behindDir))}
+	collision := checkCollisions(cells, targetB)
+	if collision == nil { return }
+
 	targetF := Point{math.Round((*t).position.x + math.Cos(c.direction)),
 		math.Round((*t).position.y + math.Sin(c.direction))}
-	collision := checkCollisions(cells, targetF)
+	collision = checkCollisions(cells, targetF)
 	if collision != nil {
 		(*collision).moveOne(c.direction)
 	}
-	if checkCollisions(cells, targetF) == nil {
-		behindDir := getOppositeDir(c.direction)
-		targetB := Point{math.Round((*t).position.x + math.Cos(behindDir)),
-			math.Round((*t).position.y + math.Sin(behindDir))}
-		collision = checkCollisions(cells, targetB)
-		if collision == nil {
-			return
-		}
-		newTransform := &Transform{targetF, targetF, 1.0, 1.0}
-		cells = append(cells, &Cell{collision.sprite, newTransform,
-			collision.direction, collision.cellType, true})
-	}
+	if checkCollisions(cells, targetF) != nil { return }
+	newTransform := &Transform{targetF, targetF, 1.0, 1.0}
+	cells = append(cells, &Cell{collision.sprite, newTransform,
+		collision.direction, collision.cellType, true,
+		&MovementPlaceHolder{newTransform.position, newTransform.position, false}})
 }
 
 func (c *Cell) Rotate() {

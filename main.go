@@ -15,7 +15,7 @@ type Game struct{}
 const screenWidth int = 1024
 const screenHeight int = 768
 const SCALE float64 = 2.0
-const updatesPerCall int = 90
+const updatesPerCall int = 30
 
 // cells - those who iteract with each other.
 // tiles - those who stay on a background.
@@ -104,19 +104,30 @@ func handleCellsPreparation() {
 	dragCell()
 }
 
-func releaseHasMovedFlag() {
+func releaseIsMovingFlag() {
 	for _, cell := range cells {
-		(*cell).hasMoved = false
+		m := (*cell).movement
+		(*m).isMoving = false
+	}
+}
+
+func moveCells(k float64){
+	for _, cell := range cells {
+		m := (*cell).movement
+		if cell.cellType == wallCell || m.isMoving == false { continue }
+		t := (*cell).transform
+		(*t).Lerp((*m).startPos, (*m).target, k)
 	}
 }
 
 func handleCellsPlaying() {
-	if isPaused == true { return }
 	if updatesElapsed < updatesPerCall {
 		updatesElapsed++
-		// place Lerp() here
+		moveCells(float64(updatesElapsed) / float64(updatesPerCall))
 		return
 	}
+	releaseIsMovingFlag()
+	if isPaused == true { return }
 	updatesElapsed = 0
 
 	for _, cell := range cells {
@@ -129,7 +140,7 @@ func handleCellsPlaying() {
 			(*cell).Rotate()
 		}
 	}
-	releaseHasMovedFlag()
+	isPaused = true
 }
 
 func handleInput() {
@@ -163,8 +174,6 @@ func (g *Game) Update() error {
 		}
 
 	case playing:
-		bell.Remove("LMB_pressed")
-		bell.Remove("LMB_released")
 		handleCellsPlaying()
 
 	case win:
