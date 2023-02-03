@@ -8,11 +8,14 @@ XVVXX  X    EX
 XXXXXXXXXXXXXX
 
 Available tiles:
-ForwardMoving:0
-ForwardMoving:0
+#ForwardMoving:0
+#ForwardMoving:0
 #ForwardMoving:0
 #ForwardMoving:0
 
 Dublicating:2
-Rotating:3
+Dublicating:2
+Dublicating:2
+Dublicating:2
+#Rotating:3
 

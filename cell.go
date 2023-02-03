@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -48,7 +47,6 @@ type Transform struct {
 type MovementPlaceHolder struct {
 	startPos	Point
 	target		Point
-	isMoving	bool
 }
 
 func (t *Transform) Lerp(startPos Point, endPos Point, k float64) {
@@ -62,13 +60,8 @@ func (t *Transform) Lerp(startPos Point, endPos Point, k float64) {
 // Returns a pointer to a tile which occupies targetPos. Returns nil of none were found
 func checkCollisions(cells []*Cell, targetPos Point) *Cell {
 	for _, cell := range cells {
-		t := (*cell).transform
 		m := (*cell).movement
-		//fmt.Println("> ", (*m).isMoving, " ", (*t).position.x, ":", m.target.x)
-		if ((*t).position.x == targetPos.x && (*t).position.y == targetPos.y &&
-			(*m).isMoving == false) ||
-			((*m).isMoving == true &&
-			targetPos.x == m.target.x && targetPos.y == m.target.y){
+		if (*m).target == targetPos {
 		//
 			return cell
 		}
@@ -86,70 +79,67 @@ func getOppositeDir(direction float64) float64 {
 
 // Moves its tile by one width in the direction pointed by direction
 func (c *Cell) moveOne(direction float64) {
-	if (*c).cellType == wallCell{ return }
-	fmt.Println("Trying to move ", c.cellType, " in dir ", direction / math.Pi)
-
-	t := (*c).transform
-	target := Point{math.Round((*t).position.x + math.Cos(direction)),
-		math.Round((*t).position.y + math.Sin(direction))}
+	if (*c).cellType == wallCell { return }
+	
+	m := (*c).movement
+	
+	target := Point{math.Round((*m).target.x + math.Cos(direction)),
+		math.Round((*m).target.y + math.Sin(direction))}
 	collision := checkCollisions(cells, target)
 	if collision != nil {
-		fmt.Println("Obstacle found ", collision.cellType)
+		if collision.cellType == moveStraightCell &&
+			collision.direction == getOppositeDir(c.direction) { return }
 		(*collision).moveOne(direction)
 	}
+
 	collision = checkCollisions(cells, target)
 	if collision == nil {
-		fmt.Println("Obstacle removed ", c.cellType)
-		//(*t).position = target
-		m := (*c).movement
-		(*m).startPos = (*t).position
 		(*m).target = target
-		(*m).isMoving = true
-	} else {
-		fmt.Println("Obstacle was not removed", collision.cellType)
 	}
 }
 
 func (c *Cell) Dublicate() {
 	if (*c).cellType != dublicationCell { return }
 
-	t := (*c).transform
+	m := (*c).movement
 	
 	behindDir := getOppositeDir(c.direction)
-	targetB := Point{math.Round((*t).position.x + math.Cos(behindDir)),
-		math.Round((*t).position.y + math.Sin(behindDir))}
-	collision := checkCollisions(cells, targetB)
-	if collision == nil { return }
+	targetB := Point{math.Round((*m).target.x + math.Cos(behindDir)),
+		math.Round((*m).target.y + math.Sin(behindDir))}
+	collisionB := checkCollisions(cells, targetB)
+	if collisionB == nil { return }
 
-	targetF := Point{math.Round((*t).position.x + math.Cos(c.direction)),
-		math.Round((*t).position.y + math.Sin(c.direction))}
-	collision = checkCollisions(cells, targetF)
-	if collision != nil {
-		(*collision).moveOne(c.direction)
+	targetF := Point{math.Round((*m).target.x + math.Cos(c.direction)),
+		math.Round((*m).target.y + math.Sin(c.direction))}
+	collisionF := checkCollisions(cells, targetF)
+	if collisionF != nil {
+		(*collisionF).moveOne((*c).direction)
 	}
 	if checkCollisions(cells, targetF) != nil { return }
 	newTransform := &Transform{targetF, targetF, 1.0, 1.0}
-	cells = append(cells, &Cell{collision.sprite, newTransform,
-		collision.direction, collision.cellType, true,
-		&MovementPlaceHolder{newTransform.position, newTransform.position, false}})
+	cells = append(cells, &Cell{collisionB.sprite, newTransform,
+		collisionB.direction, collisionB.cellType, true,
+		&MovementPlaceHolder{newTransform.position, newTransform.position}})
 }
 
 func (c *Cell) Rotate() {
 	if (*c).cellType != rotationCell { return }
 
-	t := (*c).transform
+	// t := (*c).transform
+	m := (*c).movement
 	direction := 0.0
 	for direction < 2 * math.Pi {
-		target := Point{math.Round((*t).position.x + math.Cos(direction)),
-			math.Round((*t).position.y + math.Sin(direction))}
+		target := Point{math.Round((*m).target.x + math.Cos(direction)),
+			math.Round((*m).target.y + math.Sin(direction))}
 		collision := checkCollisions(cells, target)
 		direction += math.Pi / 2
 		// also add here a check for duplication cell front a back surfaces
-		if collision == nil || collision.cellType == wallCell { continue }
+		if collision == nil { continue }
 			
 		(*collision).SetDirection(collision.direction + math.Pi / 2)
 		//fmt.Println((*collision).cellType, " ", (*collision).direction / math.Pi * 2)
 	}
+	(*c).SetDirection((*c).direction + math.Pi / 2)
 }
 
 func (t *Transform) isPointInside(point Point) bool {
@@ -173,7 +163,7 @@ func (c *Cell) PressDetect(message bell.Message) {
 	if (*c).transform.isPointInside(Point{pressedX, pressedY}) {
 		for _, tile := range tiles {
 			if (*tile).transform.isPointInside(Point{pressedX, pressedY}) {
-				(*tile).isOccupied= false
+				(*tile).isOccupied = false
 				break
 			}
 		}
@@ -202,6 +192,9 @@ func (c *Cell) TryPlace() {
 			} else {
 				(*cellT).position = (*tileT).position
 				(*cellT).defaultPosition = (*tileT).position
+				m := (*c).movement
+				(*m).startPos = (*tileT).position
+				(*m).target = (*tileT).position
 				(*tile).isOccupied = true
 				grabbedCell = nil
 				cellsReady++

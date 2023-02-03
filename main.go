@@ -104,17 +104,19 @@ func handleCellsPreparation() {
 	dragCell()
 }
 
-func releaseIsMovingFlag() {
+func fixPositions() {
 	for _, cell := range cells {
 		m := (*cell).movement
-		(*m).isMoving = false
+		t := (*cell).transform
+		(*t).position = (*m).target
+		(*m).startPos = (*m).target
 	}
 }
 
 func moveCells(k float64){
 	for _, cell := range cells {
+		if cell.cellType == wallCell { continue }
 		m := (*cell).movement
-		if cell.cellType == wallCell || m.isMoving == false { continue }
 		t := (*cell).transform
 		(*t).Lerp((*m).startPos, (*m).target, k)
 	}
@@ -126,19 +128,21 @@ func handleCellsPlaying() {
 		moveCells(float64(updatesElapsed) / float64(updatesPerCall))
 		return
 	}
-	releaseIsMovingFlag()
+	fixPositions()
 	if isPaused == true { return }
 	updatesElapsed = 0
 
 	for _, cell := range cells {
-		switch (*cell).cellType {
-		case moveStraightCell:
-			(*cell).moveOne((*cell).direction)
-		case dublicationCell:
-			(*cell).Dublicate()
-		case rotationCell:
-			(*cell).Rotate()
-		}
+		if (*cell).cellType != dublicationCell { continue }
+		(*cell).Dublicate()
+	}
+	for _, cell := range cells {
+		if (*cell).cellType != rotationCell { continue }
+		(*cell).Rotate()
+	}
+	for _, cell := range cells {
+		if (*cell).cellType != moveStraightCell { continue }
+		(*cell).moveOne((*cell).direction)
 	}
 	isPaused = true
 }

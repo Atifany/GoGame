@@ -63,7 +63,7 @@ func readAvailableTiles(gameMap string, cellImages []*MyImage) {
 			Point{float64(col), float64(row)}, 1.0, 1.0},
 			0.0, cellType, false, &MovementPlaceHolder{
 				Point{float64(col), float64(row)},
-				Point{float64(col), float64(row)}, false}}
+				Point{float64(col), float64(row)}}}
 		bell.Listen("LMB_pressed", cell.PressDetect)
 		bell.Listen("LMB_released", cell.releaseDetect)
 		cells = append(cells, cell)
@@ -108,7 +108,7 @@ func readMap(gameMap string, cellImages []*MyImage, tileTypeLookUp map[byte]int)
 				0.0, cellType, false,
 				&MovementPlaceHolder{
 					Point{float64(col), float64(row)},
-					Point{float64(col), float64(row)}, false} }
+					Point{float64(col), float64(row)}} }
 			cells = append(cells, cell)
 			cellsReady++
 		}
