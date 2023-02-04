@@ -52,11 +52,18 @@ var grabbedCell *Cell = nil
 var cells []*Cell
 var tiles []*Tile
 
-var pauseButton *Button
+var pauseButton		*Button
+var replayButton	*Button
 
 func releaseAllCells() {
 	for _, cell := range cells {
 		cell.TryPlace()
+	}
+}
+
+func releaseAllTiles() {
+	for _, tile := range tiles {
+		(*tile).isOccupied = false
 	}
 }
 
@@ -70,6 +77,13 @@ func init() {
 		Point{0.0, float64(mapHeight) + 1}, 1.0, 1.0},
 		false, pauseButtonPressed}
 	bell.Listen("LMB_pressed", pauseButton.PressDetect)
+
+	replayButtonImage := LoadImage("./textures/ReplayButton.png", -1).image
+	replayButton = &Button{replayButtonImage, &Transform{
+		Point{1.0, float64(mapHeight) + 1},
+		Point{1.0, float64(mapHeight) + 1}, 1.0, 1.0},
+		true, restartLevel}
+	bell.Listen("LMB_pressed", replayButton.PressDetect)
 }
 
 func checkWinCondition() {

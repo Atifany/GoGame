@@ -36,12 +36,27 @@ func isTile(cellType int) bool {
 	return false
 }
 
-// readAvailableTiles parses given available cells to cells
-func readAvailableTiles(gameMap string, cellImages []*MyImage) {
+func placeCellsAtStart() {
 	var col int = mapWidth + 1
 	var row int = 0
-	mapLines := strings.Split(gameMap, "\n")
+	for _, cell := range cells {
+		if cell.cellType == wallCell || cell.isSummoned == true { continue }
+		t := (*cell).transform
+		(*t).position = Point{float64(col), float64(row)}
+		(*t).defaultPosition = Point{float64(col), float64(row)}
 
+		row++
+		if row > mapHeight {
+			row = 0
+			col++
+		}
+	}
+}
+
+// readAvailableTiles parses given available cells to cells
+func readAvailableTiles(gameMap string, cellImages []*MyImage) {
+	mapLines := strings.Split(gameMap, "\n")
+	
 	var i int = 0
 	for i < len(mapLines) && mapLines[i] != "Available tiles:" {
 		i++
@@ -59,22 +74,17 @@ func readAvailableTiles(gameMap string, cellImages []*MyImage) {
 		checkParseError(err)
 
 		cell := &Cell{img.image, &Transform{
-			Point{float64(col), float64(row)},
-			Point{float64(col), float64(row)}, 1.0, 1.0},
+			Point{0.0, 0.0},
+			Point{0.0, 0.0}, 1.0, 1.0},
 			0.0, cellType, false, &MovementPlaceHolder{
-				Point{float64(col), float64(row)},
-				Point{float64(col), float64(row)}}}
+				Point{0.0, 0.0},
+				Point{0.0, 0.0}}}
 		bell.Listen("LMB_pressed", cell.PressDetect)
 		bell.Listen("LMB_released", cell.releaseDetect)
 		cells = append(cells, cell)
-
-		row++
-		if row > mapHeight {
-			row = 0
-			col++
-		}
 		i++
 	}
+	placeCellsAtStart()
 }
 
 // readMap parses a map from a map file to backCells and walls in cells

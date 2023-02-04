@@ -17,7 +17,28 @@ func pauseButtonPressed() {
 	if gameState == preparation {
 		gameState = playing
 		releaseAllCells()
+		releaseAllTiles()
 	}
+}
+
+func removeFromCells(index int){
+	cells[index] = cells[len(cells) - 1]
+}
+
+func removeSummonedCells() {
+	var newCells []*Cell
+	for _, cell := range cells {
+		if cell.isSummoned == true { continue }
+		(*cell).direction = 0.0
+		newCells = append(newCells, cell)
+	}
+	cells = newCells
+}
+
+func restartLevel() {
+	gameState = preparation
+	removeSummonedCells()
+	placeCellsAtStart()
 }
 
 // Clear all consts properly

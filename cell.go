@@ -26,7 +26,7 @@ type Cell struct {
 	transform	*Transform
 	direction	float64
 	cellType	int
-	hasMoved	bool
+	isSummoned	bool
 	movement	*MovementPlaceHolder
 }
 
