@@ -24,12 +24,40 @@ func drawTiles(screen *ebiten.Image) {
 // cells
 func drawCells(screen *ebiten.Image) {
 	for _, cell := range cells {
+		t := (*cell).transform
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Rotate((*cell).direction)
+		op.GeoM.Rotate((*t).direction)
 		MoveAfterRotation(cell, op)
 
 		screen.DrawImage((*cell).sprite, op)
 	}
+}
+
+// converts angle value from radians to degrees
+func radToDeg(rad float64) (deg float64){
+	deg = rad * 180.0 / math.Pi
+	return deg
+}
+
+// converts angle value from degrees to radians
+func degToRad(deg float64) (rad float64) {
+	rad = deg / 180.0 * math.Pi
+	return rad
+}
+
+func rotatePointPoint(target Point, pivot Point, angle float64) (Point) {
+	cos := math.Cos(angle)
+	sin := math.Sin(angle)
+
+	target.x -= pivot.x
+	target.y -= pivot.y
+
+	var xNew float64 = target.x * cos - target.y * sin
+	var yNew float64 = target.x * sin + target.y * cos
+
+	target.x = xNew + pivot.x
+	target.y = yNew + pivot.y
+	return target
 }
 
 /*
@@ -40,23 +68,28 @@ is needed to adjust rotation result.
 It also moves image to cell's coordinates
 */
 func MoveAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
+	t := (*c).transform
 	cellWidth := float64((*c).sprite.Bounds().Dx())
 	cellHeight := float64((*c).sprite.Bounds().Dy())
 	
-	cos := math.Cos((*c).direction)
-	sin := math.Sin((*c).direction)
+	//cos := math.Cos(t.direction)
+	//sin := math.Sin(t.direction)
 
-	rot := Point{cos - sin, sin + cos}
-	if rot.x >= 0 {
-		rot.x = 0.0
-	}
-	if rot.y >= 0 {
-		rot.y = 0.0
-	}
+	pivot := Point{t.position.x + t.width / 2, (*t).position.y + t.height / 2}
+	newPos := rotatePointPoint(t.position, pivot, t.direction)
+	op.GeoM.Translate(newPos.x * cellWidth, newPos.y * cellHeight)
 
-	cellT := (*c).transform
-	op.GeoM.Translate(math.Round(((*cellT).position.x - rot.x) * cellWidth),
-		math.Round(((*cellT).position.y - rot.y) * cellHeight))
+	// rot := Point{cos - sin, sin + cos}
+	// if rot.x >= 0 {
+	// 	rot.x = 0.0
+	// }
+	// if rot.y >= 0 {
+	// 	rot.y = 0.0
+	// }
+
+	// cellT := (*c).transform
+	// op.GeoM.Translate(math.Round(((*cellT).position.x - rot.x) * cellWidth),
+	// 	math.Round(((*cellT).position.y - rot.y) * cellHeight))
 }
 
 // Called every frame to draw

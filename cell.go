@@ -24,22 +24,22 @@ type Tile struct {
 type Cell struct {
 	sprite		*ebiten.Image
 	transform	*Transform
-	direction	float64
 	cellType	int
 	isSummoned	bool
 	movement	*MovementPlaceHolder
 }
 
-func (c *Cell) SetDirection(direction float64) {
-	if direction >= 2*math.Pi {
-		direction -= 2*math.Pi
+func SetRotation(dst *float64, newValue float64) {
+	if newValue >= 2 * math.Pi {
+		newValue -= 2 * math.Pi
 	}
-	(*c).direction = direction
+	*dst = newValue
 }
 
 type Transform struct {
 	position		Point
 	defaultPosition Point
+	direction		float64
 	width			float64
 	height			float64
 }
@@ -47,6 +47,8 @@ type Transform struct {
 type MovementPlaceHolder struct {
 	startPos	Point
 	target		Point
+	startRot	float64
+	endRot		float64
 }
 
 func (t *Transform) Lerp(startPos Point, endPos Point, k float64) {
@@ -55,6 +57,13 @@ func (t *Transform) Lerp(startPos Point, endPos Point, k float64) {
 
 	(*t).position.x = startPos.x + k * shiftX
 	(*t).position.y = startPos.y + k * shiftY
+}
+
+func (t *Transform) LerpRotate(startRot float64, endRot float64, k float64) {
+	shift := endRot - startRot
+	
+	(*t).direction = startRot + k * shift
+	//SetRotation(&((*t).direction), startRot + k * shift)
 }
 
 // Returns a pointer to a tile which occupies targetPos. Returns nil of none were found
@@ -82,13 +91,14 @@ func (c *Cell) moveOne(direction float64) {
 	if (*c).cellType == wallCell { return }
 	
 	m := (*c).movement
+	t := (*c).transform
 	
 	target := Point{math.Round((*m).target.x + math.Cos(direction)),
 		math.Round((*m).target.y + math.Sin(direction))}
 	collision := checkCollisions(cells, target)
 	if collision != nil {
 		if collision.cellType == moveStraightCell &&
-			collision.direction == getOppositeDir(c.direction) { return }
+			(*t).direction == getOppositeDir((*t).direction) { return }
 		(*collision).moveOne(direction)
 	}
 
@@ -102,24 +112,26 @@ func (c *Cell) Dublicate() {
 	if (*c).cellType != dublicationCell { return }
 
 	m := (*c).movement
+	t := (*c).transform
 	
-	behindDir := getOppositeDir(c.direction)
+	behindDir := getOppositeDir(t.direction)
 	targetB := Point{math.Round((*m).target.x + math.Cos(behindDir)),
 		math.Round((*m).target.y + math.Sin(behindDir))}
 	collisionB := checkCollisions(cells, targetB)
 	if collisionB == nil { return }
 
-	targetF := Point{math.Round((*m).target.x + math.Cos(c.direction)),
-		math.Round((*m).target.y + math.Sin(c.direction))}
+	targetF := Point{math.Round((*m).target.x + math.Cos(t.direction)),
+		math.Round((*m).target.y + math.Sin(t.direction))}
 	collisionF := checkCollisions(cells, targetF)
 	if collisionF != nil {
-		(*collisionF).moveOne((*c).direction)
+		(*collisionF).moveOne(t.direction)
 	}
 	if checkCollisions(cells, targetF) != nil { return }
-	newTransform := &Transform{targetF, targetF, 1.0, 1.0}
+	newTransform := &Transform{targetF, targetF, collisionB.transform.direction, 1.0, 1.0}
 	cells = append(cells, &Cell{collisionB.sprite, newTransform,
-		collisionB.direction, collisionB.cellType, true,
-		&MovementPlaceHolder{newTransform.position, newTransform.position}})
+		collisionB.cellType, true,
+		&MovementPlaceHolder{newTransform.position, newTransform.position,
+		collisionB.transform.direction, collisionB.transform.direction}})
 }
 
 func (c *Cell) Rotate() {
@@ -133,13 +145,11 @@ func (c *Cell) Rotate() {
 			math.Round((*m).target.y + math.Sin(direction))}
 		collision := checkCollisions(cells, target)
 		direction += math.Pi / 2
-		// also add here a check for duplication cell front a back surfaces
 		if collision == nil { continue }
-			
-		(*collision).SetDirection(collision.direction + math.Pi / 2)
-		//fmt.Println((*collision).cellType, " ", (*collision).direction / math.Pi * 2)
+		collisionM := (*collision).movement
+		(*collisionM).endRot = collisionM.endRot - math.Pi / 2
 	}
-	(*c).SetDirection((*c).direction + math.Pi / 2)
+	(*m).endRot = m.endRot - math.Pi / 2
 }
 
 func (t *Transform) isPointInside(point Point) bool {

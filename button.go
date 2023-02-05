@@ -29,7 +29,11 @@ func removeSummonedCells() {
 	var newCells []*Cell
 	for _, cell := range cells {
 		if cell.isSummoned == true { continue }
-		(*cell).direction = 0.0
+		t := (*cell).transform
+		m := (*cell).movement
+		(*m).startRot = 0.0
+		(*m).endRot = 0.0
+		(*t).direction = 0.0
 		newCells = append(newCells, cell)
 	}
 	cells = newCells

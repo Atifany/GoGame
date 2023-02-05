@@ -74,14 +74,14 @@ func init() {
 	playButtonImage := LoadImage("./textures/PlayButton.png", -1).image
 	pauseButton = &Button{playButtonImage, &Transform{
 		Point{0.0, float64(mapHeight) + 1},
-		Point{0.0, float64(mapHeight) + 1}, 1.0, 1.0},
+		Point{0.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
 		false, pauseButtonPressed}
 	bell.Listen("LMB_pressed", pauseButton.PressDetect)
 
 	replayButtonImage := LoadImage("./textures/ReplayButton.png", -1).image
 	replayButton = &Button{replayButtonImage, &Transform{
 		Point{1.0, float64(mapHeight) + 1},
-		Point{1.0, float64(mapHeight) + 1}, 1.0, 1.0},
+		Point{1.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
 		true, restartLevel}
 	bell.Listen("LMB_pressed", replayButton.PressDetect)
 }
@@ -122,16 +122,20 @@ func fixPositions() {
 	for _, cell := range cells {
 		m := (*cell).movement
 		t := (*cell).transform
-		(*t).position = (*m).target
-		(*m).startPos = (*m).target
+		(*t).position = m.target
+		(*m).startPos = m.target
+		SetRotation(&((*t).direction), m.endRot)
+		SetRotation(&((*m).startRot), m.endRot)
+		SetRotation(&((*m).endRot), m.endRot)
 	}
 }
 
 func moveCells(k float64){
 	for _, cell := range cells {
-		if cell.cellType == wallCell { continue }
 		m := (*cell).movement
 		t := (*cell).transform
+		(*t).LerpRotate(m.startRot, m.endRot, k)
+		if cell.cellType == wallCell { continue }
 		(*t).Lerp((*m).startPos, (*m).target, k)
 	}
 }
@@ -156,7 +160,7 @@ func handleCellsPlaying() {
 	}
 	for _, cell := range cells {
 		if (*cell).cellType != moveStraightCell { continue }
-		(*cell).moveOne((*cell).direction)
+		(*cell).moveOne(cell.transform.direction)
 	}
 	isPaused = true
 }
@@ -174,7 +178,11 @@ func handleInput() {
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		if grabbedCell != nil {
-			(*grabbedCell).SetDirection((*grabbedCell).direction + math.Pi / 2)
+			t := (*grabbedCell).transform
+			m := (*grabbedCell).movement
+			SetRotation(&((*t).direction), t.direction + math.Pi / 2)
+			SetRotation(&((*m).startRot), m.startRot + math.Pi / 2)
+			SetRotation(&((*m).endRot), m.endRot + math.Pi / 2)
 		}
 	}
 }
