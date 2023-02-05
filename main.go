@@ -34,14 +34,15 @@ const (
 	win int			= 2
 	lose int		= 3
 )
-var gameState int = preparation
+var gameState int		= preparation
+var isPaused bool		= true
+var isTurnByTurn bool	= false
 
 // map borders in tile witdths
 var mapWidth int = 0
 var mapHeight int = 0
 
 var updatesElapsed int = 0
-var isPaused bool = true
 var cellsReady int = 0
 var grabbedCell *Cell = nil
 
@@ -49,8 +50,9 @@ var grabbedCell *Cell = nil
 var cells []*Cell
 var tiles []*Tile
 
-var pauseButton		*Button
-var replayButton	*Button
+var pauseButton			*Button
+var replayButton		*Button
+var turnByTurnButton	*Button
 
 func releaseAllCells() {
 	for _, cell := range cells {
@@ -81,6 +83,13 @@ func init() {
 		Point{1.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
 		true, restartLevel}
 	bell.Listen("LMB_pressed", replayButton.PressDetect)
+
+	turnByTurnButtonImage := LoadImage("./textures/TurnByTurnButton.png", -1).image
+	turnByTurnButton = &Button{turnByTurnButtonImage, &Transform{
+		Point{2.0, float64(mapHeight) + 1},
+		Point{2.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
+		true, switchTurnByTurn}
+	bell.Listen("LMB_pressed", turnByTurnButton.PressDetect)
 }
 
 func checkWinCondition() {
@@ -159,7 +168,10 @@ func handleCellsPlaying() {
 		if (*cell).cellType != moveStraightCell { continue }
 		(*cell).moveOne(cell.transform.direction)
 	}
-	isPaused = true
+
+	if isTurnByTurn == true {
+		isPaused = true
+	}
 }
 
 func handleInput() {

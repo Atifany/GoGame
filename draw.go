@@ -97,9 +97,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op = &ebiten.DrawImageOptions{}
 	buttonT = (*replayButton).transform
 	op.GeoM.Translate(
-		(*buttonT).position.x * float64((*pauseButton).sprite.Bounds().Dx()),
-		(*buttonT).position.y * float64((*pauseButton).sprite.Bounds().Dy()))
+		(*buttonT).position.x * float64((*replayButton).sprite.Bounds().Dx()),
+		(*buttonT).position.y * float64((*replayButton).sprite.Bounds().Dy()))
 	screen.DrawImage((*replayButton).sprite, op)
+
+	op = &ebiten.DrawImageOptions{}
+	buttonT = (*turnByTurnButton).transform
+	op.GeoM.Translate(
+		(*buttonT).position.x * float64((*turnByTurnButton).sprite.Bounds().Dx()),
+		(*buttonT).position.y * float64((*turnByTurnButton).sprite.Bounds().Dy()))
+	screen.DrawImage((*turnByTurnButton).sprite, op)
 }
 
 // whatever

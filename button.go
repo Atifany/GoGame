@@ -45,6 +45,13 @@ func restartLevel() {
 	placeCellsAtStart()
 }
 
+func switchTurnByTurn() {
+	isTurnByTurn = !isTurnByTurn
+	if gameState == playing {
+		isPaused = !isPaused
+	}
+}
+
 // Clear all consts properly
 // PressDetect is called on LMB clicked and detects whether
 // a click landed on a parent button.
