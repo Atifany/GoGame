@@ -12,9 +12,6 @@ import (
 
 type Game struct{}
 
-const screenWidth int = 1024
-const screenHeight int = 768
-const SCALE float64 = 2.0
 const updatesPerCall int = 30
 
 // cells - those who iteract with each other.

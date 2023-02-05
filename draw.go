@@ -6,6 +6,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+const screenWidth int = 1024
+const screenHeight int = 768
+const SCALE float64 = 2.0
+
 // background tiles
 func drawTiles(screen *ebiten.Image) {
 	for _, tile := range tiles {
@@ -71,25 +75,10 @@ func MoveAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
 	t := (*c).transform
 	cellWidth := float64((*c).sprite.Bounds().Dx())
 	cellHeight := float64((*c).sprite.Bounds().Dy())
-	
-	//cos := math.Cos(t.direction)
-	//sin := math.Sin(t.direction)
 
 	pivot := Point{t.position.x + t.width / 2, (*t).position.y + t.height / 2}
 	newPos := rotatePointPoint(t.position, pivot, t.direction)
 	op.GeoM.Translate(newPos.x * cellWidth, newPos.y * cellHeight)
-
-	// rot := Point{cos - sin, sin + cos}
-	// if rot.x >= 0 {
-	// 	rot.x = 0.0
-	// }
-	// if rot.y >= 0 {
-	// 	rot.y = 0.0
-	// }
-
-	// cellT := (*c).transform
-	// op.GeoM.Translate(math.Round(((*cellT).position.x - rot.x) * cellWidth),
-	// 	math.Round(((*cellT).position.y - rot.y) * cellHeight))
 }
 
 // Called every frame to draw
