@@ -37,6 +37,22 @@ func drawCells(screen *ebiten.Image) {
 	}
 }
 
+func drawButtons(screen *ebiten.Image) {
+	var buttons []*Button
+	buttons = append(buttons, pauseButton)
+	buttons = append(buttons, replayButton)
+	buttons = append(buttons, turnByTurnButton)
+	for _, button := range buttons {
+		sprite := button.spriteChooser(*button)
+		op := &ebiten.DrawImageOptions{}
+		buttonT := (*button).transform
+		op.GeoM.Translate(
+		(*buttonT).position.x * float64(sprite.Bounds().Dx()),
+		(*buttonT).position.y * float64(sprite.Bounds().Dy()))
+		screen.DrawImage(sprite, op)
+	}
+}
+
 // converts angle value from radians to degrees
 func radToDeg(rad float64) (deg float64){
 	deg = rad * 180.0 / math.Pi
@@ -49,6 +65,7 @@ func degToRad(deg float64) (rad float64) {
 	return rad
 }
 
+// Rotates target point around pivot point by angle degrees
 func rotatePointPoint(target Point, pivot Point, angle float64) (Point) {
 	cos := math.Cos(angle)
 	sin := math.Sin(angle)
@@ -85,28 +102,7 @@ func MoveAfterRotation(c *Cell, op *ebiten.DrawImageOptions) {
 func (g *Game) Draw(screen *ebiten.Image) {
 	drawTiles(screen)
 	drawCells(screen)
-	
-	// UI
-	op := &ebiten.DrawImageOptions{}
-	buttonT := (*pauseButton).transform
-	op.GeoM.Translate(
-		(*buttonT).position.x * float64((*pauseButton).sprite.Bounds().Dx()),
-		(*buttonT).position.y * float64((*pauseButton).sprite.Bounds().Dy()))
-	screen.DrawImage((*pauseButton).sprite, op)
-
-	op = &ebiten.DrawImageOptions{}
-	buttonT = (*replayButton).transform
-	op.GeoM.Translate(
-		(*buttonT).position.x * float64((*replayButton).sprite.Bounds().Dx()),
-		(*buttonT).position.y * float64((*replayButton).sprite.Bounds().Dy()))
-	screen.DrawImage((*replayButton).sprite, op)
-
-	op = &ebiten.DrawImageOptions{}
-	buttonT = (*turnByTurnButton).transform
-	op.GeoM.Translate(
-		(*buttonT).position.x * float64((*turnByTurnButton).sprite.Bounds().Dx()),
-		(*buttonT).position.y * float64((*turnByTurnButton).sprite.Bounds().Dy()))
-	screen.DrawImage((*turnByTurnButton).sprite, op)
+	drawButtons(screen)
 }
 
 // whatever

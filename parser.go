@@ -120,7 +120,6 @@ func readMap(gameMap string, cellImages []*MyImage, tileTypeLookUp map[byte]int)
 					Point{float64(col), float64(row)},
 					Point{float64(col), float64(row)}, 0.0, 0.0} }
 			cells = append(cells, cell)
-			cellsReady++
 		}
 		col++;
 	}

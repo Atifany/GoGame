@@ -215,3 +215,12 @@ func (c *Cell) TryPlace() {
 	(*cellT).position = (*cellT).defaultPosition
 	grabbedCell = nil
 }
+
+func countNonWallCells() (int) {
+	res := 0
+	for _, cell := range cells {
+		if cell.cellType == wallCell { continue }
+		res++
+	}
+	return res
+}

@@ -6,10 +6,58 @@ import (
 )
 
 type Button struct {
-	sprite		*ebiten.Image
-	transform	*Transform
-	isActive	bool
-	pressed		func()
+	sprites			[]*Sprite
+	transform		*Transform
+	isActive		bool
+	pressed			func()
+	spriteChooser	func(Button) *ebiten.Image
+}
+
+type Sprite struct {
+	sprite	*ebiten.Image
+	name	string
+}
+
+func (b Button) findSpriteByName(name string) (*ebiten.Image) {
+	for _, sprite := range b.sprites {
+		if sprite.name == name {
+			return sprite.sprite
+		}
+	}
+	return nil
+}
+
+func playButtonSpriteChooser(b Button) (*ebiten.Image) {
+	if b.isActive == false {
+		return b.findSpriteByName("inactive")
+	}
+	if isPaused == true {
+		return b.findSpriteByName("pause")
+	}
+	if isPaused == false {
+		return b.findSpriteByName("play")
+	}
+	return b.findSpriteByName("play")
+}
+
+func replayButtonSpriteChooser(b Button) (*ebiten.Image) {
+	if b.isActive == false {
+		return b.findSpriteByName("inactive")
+	}
+	if b.isActive == true {
+		return b.findSpriteByName("replay")
+	}
+	return b.findSpriteByName("replay")
+}
+
+func turnByTurnButtonSpriteChooser(b Button) (*ebiten.Image) {
+	if b.isActive == false {
+		return b.findSpriteByName("inactive")
+	}
+	if b.isActive == true {
+		return b.findSpriteByName("turnByTurn")
+	}
+	return b.findSpriteByName("turnByTurn")
 }
 
 func pauseButtonPressed() {
@@ -41,6 +89,10 @@ func removeSummonedCells() {
 
 func restartLevel() {
 	gameState = preparation
+	pauseButton.isActive = false
+	isPaused = true
+	isTurnByTurn = false
+	cellsReady = 0
 	removeSummonedCells()
 	placeCellsAtStart()
 }

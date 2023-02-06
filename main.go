@@ -47,8 +47,8 @@ var cellsReady int = 0
 var grabbedCell *Cell = nil
 
 // This arrays contain all the cells from the game
-var cells []*Cell
-var tiles []*Tile
+var cells	[]*Cell
+var tiles	[]*Tile
 
 var pauseButton			*Button
 var replayButton		*Button
@@ -66,30 +66,49 @@ func releaseAllTiles() {
 	}
 }
 
+func initButtons() {
+	var sprites []*Sprite
+
+	playButtonImage := LoadImage("./textures/Buttons/PlayButton.png", -1).image
+	pauseButtonImage := LoadImage("./textures/Buttons/PausePlayButton.png", -1).image
+	inactiveButtonImage := LoadImage("./textures/Buttons/InactivePlayButton.png", -1).image
+	sprites = append(sprites, &Sprite{ playButtonImage, "play" })
+	sprites = append(sprites, &Sprite{ pauseButtonImage, "pause" })
+	sprites = append(sprites, &Sprite{ inactiveButtonImage, "inactive" })
+	pauseButton = &Button{ sprites,
+		&Transform{ Point{0.0, float64(mapHeight) + 1},
+		Point{0.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
+		false, pauseButtonPressed, playButtonSpriteChooser}
+	bell.Listen("LMB_pressed", pauseButton.PressDetect)
+	sprites = nil
+
+	replayButtonImage := LoadImage("./textures/Buttons/ReplayButton.png", -1).image
+	inactiveReplayButtonImage := LoadImage("./textures/Buttons/InactiveReplayButton.png", -1).image
+	sprites = append(sprites, &Sprite{ replayButtonImage, "replay" })
+	sprites = append(sprites, &Sprite{ inactiveReplayButtonImage, "inactive" })
+	replayButton = &Button{sprites, &Transform{
+		Point{1.0, float64(mapHeight) + 1},
+		Point{1.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
+		true, restartLevel, replayButtonSpriteChooser}
+	bell.Listen("LMB_pressed", replayButton.PressDetect)
+	sprites = nil
+
+	turnByTurnButtonImage := LoadImage("./textures/Buttons/TurnByTurnButton.png", -1).image
+	inactiveTurnByTurnButtonImage := LoadImage("./textures/Buttons/InactiveTurnByTurnButton.png", -1).image
+	sprites = append(sprites, &Sprite{ turnByTurnButtonImage, "turnByTurn" })
+	sprites = append(sprites, &Sprite{ inactiveTurnByTurnButtonImage, "inactive"})
+	turnByTurnButton = &Button{sprites, &Transform{
+		Point{2.0, float64(mapHeight) + 1},
+		Point{2.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
+		false, switchTurnByTurn, turnByTurnButtonSpriteChooser}
+	bell.Listen("LMB_pressed", turnByTurnButton.PressDetect)
+	sprites = nil
+}
+
 // Called after RunGame is called
 func init() {
 	loadMapFromFile()
-
-	playButtonImage := LoadImage("./textures/PlayButton.png", -1).image
-	pauseButton = &Button{playButtonImage, &Transform{
-		Point{0.0, float64(mapHeight) + 1},
-		Point{0.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
-		false, pauseButtonPressed}
-	bell.Listen("LMB_pressed", pauseButton.PressDetect)
-
-	replayButtonImage := LoadImage("./textures/ReplayButton.png", -1).image
-	replayButton = &Button{replayButtonImage, &Transform{
-		Point{1.0, float64(mapHeight) + 1},
-		Point{1.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
-		true, restartLevel}
-	bell.Listen("LMB_pressed", replayButton.PressDetect)
-
-	turnByTurnButtonImage := LoadImage("./textures/TurnByTurnButton.png", -1).image
-	turnByTurnButton = &Button{turnByTurnButtonImage, &Transform{
-		Point{2.0, float64(mapHeight) + 1},
-		Point{2.0, float64(mapHeight) + 1}, 0.0, 1.0, 1.0},
-		true, switchTurnByTurn}
-	bell.Listen("LMB_pressed", turnByTurnButton.PressDetect)
+	initButtons()
 }
 
 func checkWinCondition() {
@@ -204,11 +223,13 @@ func (g *Game) Update() error {
 
 	case preparation:
 		handleCellsPreparation()
-		if cellsReady == len(cells) {
+		turnByTurnButton.isActive = false
+		if cellsReady == countNonWallCells() {
 			pauseButton.isActive = true
 		}
 
 	case playing:
+		turnByTurnButton.isActive = true
 		handleCellsPlaying()
 
 	case win:
