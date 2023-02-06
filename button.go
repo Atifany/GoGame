@@ -94,6 +94,8 @@ func restartLevel() {
 	isTurnByTurn = false
 	cellsReady = 0
 	removeSummonedCells()
+	releaseAllCells()
+	releaseAllTiles()
 	placeCellsAtStart()
 }
 
