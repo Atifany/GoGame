@@ -15,5 +15,5 @@ Currentlly has ugly interface and only one map to play. There might be some bugs
 
 ## Screenshots
 
-![Alt text](https://disk.yandex.ru/i/kw1wFudrZj_SxQ)
-![Alt text](https://disk.yandex.ru/i/rm7k_IrGTsMEYg)
+![Alt text](example_screenshots/GoGame_screenshot_00.png)
+![Alt text](example_screenshots/GoGame_screenshot_01.png)
