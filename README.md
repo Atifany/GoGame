@@ -11,7 +11,7 @@ There are two ready to use builds for windows and linux in builds/ folder.
 In order to achieve victory player needs to place given cells in green areas and press play once all of given tiles are placed. After that cells will move, dublicate and rotate on their own. The challenge is to place cells the way they would hit red areas.
 
 ## Notes
-Currentlly has ugly interface and only one map to play. There might be some bugs or even crushes, because the project is still in develpment and is not tested well.
+Currentlly has ugly interface and only one map to play. There might be some bugs or even crushes, because the project is still in develpment and is not tested well. Windows build is currently broken.
 
 ## Screenshots
 
